@@ -27,17 +27,23 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Database Connection with Fallback
-try {
-  await mongoose.connect(MONGO_URI, {
-    serverSelectionTimeoutMS: 5000 // 5s timeout
+// Database Connection
+const isProduction = process.env.NODE_ENV === 'production';
+const hasCustomMongoUri = MONGO_URI !== 'mongodb://localhost:27017/event_management';
+
+if (isProduction || hasCustomMongoUri) {
+  // Never use mock DB in production or if a custom URI is provided
+  global.useMockDb = false; 
+  mongoose.connect(MONGO_URI, {
+    serverSelectionTimeoutMS: 15000 // 15s timeout for Vercel cold starts
+  })
+  .then(() => console.log('✅ Connected to MongoDB Database successfully.'))
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    console.log('Ensure MongoDB Atlas Network Access is set to allow all IPs (0.0.0.0/0)');
   });
-  console.log('✅ Connected to MongoDB Database successfully. In-Memory mock mode deactivated.');
-  global.useMockDb = false;
-} catch (err) {
-  console.warn('MongoDB connection could not be established. Operating in IN-MEMORY MOCK mode.');
-  console.warn(`MongoDB error: ${err.message}`);
-  console.log('Ensure MongoDB Atlas allows your current IP address and MONGO_URI is set in backend/.env');
+} else {
+  console.log('⚠️ Operating in IN-MEMORY MOCK mode for local development.');
   global.useMockDb = true;
 }
 
