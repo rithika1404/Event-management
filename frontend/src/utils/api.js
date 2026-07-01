@@ -1,4 +1,9 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+baseUrl = baseUrl.replace(/\/+$/, '');
+if (!baseUrl.endsWith('/api') && baseUrl.includes('vercel.app')) {
+  baseUrl += '/api';
+}
+export const API_BASE_URL = baseUrl;
 
 export const getHeaders = () => {
   const token = localStorage.getItem('adminToken');
