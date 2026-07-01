@@ -28,18 +28,18 @@ app.use(cors({
 app.use(express.json());
 
 // Database Connection with Fallback
-mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 10000 // 10s timeout — enough time for Atlas cloud connections
-})
-  .then(() => {
-    console.log('✅ Connected to MongoDB Database successfully. In-Memory mock mode deactivated.');
-    global.useMockDb = false;
-  })
-  .catch((err) => {
-    console.warn('MongoDB connection could not be established. Operating in IN-MEMORY MOCK mode.');
-    console.warn(`MongoDB error: ${err.message}`);
-    console.log('Ensure MongoDB Atlas allows your current IP address and MONGO_URI is set in backend/.env');
+try {
+  await mongoose.connect(MONGO_URI, {
+    serverSelectionTimeoutMS: 5000 // 5s timeout
   });
+  console.log('✅ Connected to MongoDB Database successfully. In-Memory mock mode deactivated.');
+  global.useMockDb = false;
+} catch (err) {
+  console.warn('MongoDB connection could not be established. Operating in IN-MEMORY MOCK mode.');
+  console.warn(`MongoDB error: ${err.message}`);
+  console.log('Ensure MongoDB Atlas allows your current IP address and MONGO_URI is set in backend/.env');
+  global.useMockDb = true;
+}
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -66,7 +66,11 @@ app.get('/api/health', (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Backend Server running on http://localhost:${PORT}`);
-  console.log(`👉 Access API health status at http://localhost:${PORT}/api/health`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Backend Server running on http://localhost:${PORT}`);
+    console.log(`👉 Access API health status at http://localhost:${PORT}/api/health`);
+  });
+}
+
+export default app;
